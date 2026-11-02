@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawerLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/main"
+        android:layout_width="match_parent"
+        android:background="@color/gray"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:orientation="vertical"
+            android:layout_marginTop="20dp"
+            android:gravity="center|top"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:gravity="center|top"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:orientation="horizontal"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/left_Menu_Open"
+                    android:layout_width="50dp"
+                    android:src="@drawable/baseline_menu_24"
+                    android:layout_height="50dp"/>
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="0dp"/>
+
+                <ImageView
+                    android:id="@+id/btnStartVpn"
+                    android:background="@drawable/start_btn"
+                    android:layout_width="150dp"
+                    android:src="@drawable/baseline_power_settings_new_24"
+                    android:layout_height="150dp"/>
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="0dp"/>
+
+                <ImageView
+                    android:id="@+id/addconfigs"
+                    android:layout_width="50dp"
+                    android:src="@drawable/outline_add_24"
+                    android:layout_height="50dp"/>
+
+            </LinearLayout>
+
+            <TextView
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginBottom="10dp"
+                android:layout_marginTop="10dp"
+                android:textSize="20sp"
+                android:textColor="@color/white"
+                android:text="Используйте ссылку типа vless://"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <EditText
+                android:focusable="false"
+                android:focusableInTouchMode="false"
+                android:cursorVisible="false"
+                android:id="@+id/vlessconnect_text"
+                android:layout_width="match_parent"
+                android:minHeight="48dp"
+                android:layout_marginLeft="15dp"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:inputType="text"
+                android:maxLines="1"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
+                android:hint="vless://"
+                android:textColorHint="@color/blue"
+                android:textColor="@color/white"
+                android:layout_marginRight="15dp"
+                android:background="@drawable/round_edit"
+                android:layout_height="wrap_content"/>
+
+            <ListView
+                android:clipToPadding="false"
+                android:divider="@null"
+                android:scrollbars="vertical"
+                android:scrollbarThumbVertical="@drawable/customscrollbars"
+                android:listSelector="@android:color/transparent"
+                android:dividerHeight="0dp"
+                android:paddingBottom="50dp"
+                android:id="@+id/listSettings"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <LinearLayout
+        android:id="@+id/sideMenu"
+        android:layout_width="280dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="#111111"
+        android:orientation="vertical"
+        android:clickable="true"
+        android:focusable="true">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Меню"
+            android:textColor="@color/blue"
+            android:layout_marginLeft="10dp"
+            android:layout_marginBottom="5dp"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginTop="25dp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:background="@color/white"
+            android:layout_marginBottom="5dp"
+            android:layout_height="2dp"/>
+
+        <CheckBox
+            android:id="@+id/Foreground_services_check"
+            android:layout_width="match_parent"
+            android:layout_marginLeft="10dp"
+            android:buttonTint="@null"
+            android:textColor="@color/white"
+            android:textStyle="bold"
+            android:layout_marginBottom="5dp"
+            android:paddingLeft="10dp"
+            android:textSize="15sp"
+            android:text="Уведомление постоянно"
+            app:buttonTint="@null"
+            android:button="@drawable/custom_checkbox_selector"
+            android:layout_marginRight="10dp"
+            android:layout_height="wrap_content"/>
+
+        <View
+            android:layout_width="match_parent"
+            android:background="@color/white"
+            android:layout_marginBottom="5dp"
+            android:layout_height="2dp"/>
+
+        <ListView
+            android:id="@+id/saveConfigs"
+            android:clipToPadding="false"
+            android:divider="@color/white"
+            android:scrollbars="vertical"
+            android:scrollbarThumbVertical="@drawable/customscrollbars"
+            android:listSelector="@android:color/transparent"
+            android:dividerHeight="2dp"
+            android:paddingBottom="50dp"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+    </LinearLayout>
+
+</androidx.drawerlayout.widget.DrawerLayout>
