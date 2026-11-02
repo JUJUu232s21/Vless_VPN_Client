@@ -229,7 +229,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkNotificationPermissionAndStartVpn() {
-        Log.d(TAG, "checkNotificationPermissionAndStartVpn() вызван");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissionHelper.check(android.Manifest.permission.POST_NOTIFICATIONS, status -> {
                 prepareAndStartVpn();
