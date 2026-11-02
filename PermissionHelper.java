@@ -1,5 +1,3 @@
-package semyon.android.studio.semyon_vpn_client;
-
 import android.content.Context;
 import android.content.pm.PackageManager;
 import androidx.activity.ComponentActivity;
