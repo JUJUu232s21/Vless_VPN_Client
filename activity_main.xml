@@ -96,15 +96,21 @@
                 android:background="@drawable/round_edit"
                 android:layout_height="wrap_content"/>
 
+            <View
+                android:layout_width="match_parent"
+                android:layout_marginTop="5dp"
+                android:background="@color/white"
+                android:layout_height="2dp"/>
+
             <ListView
+                android:id="@+id/saveConfigs"
                 android:clipToPadding="false"
-                android:divider="@null"
+                android:divider="@color/white"
                 android:scrollbars="vertical"
                 android:scrollbarThumbVertical="@drawable/customscrollbars"
                 android:listSelector="@android:color/transparent"
-                android:dividerHeight="0dp"
+                android:dividerHeight="2dp"
                 android:paddingBottom="50dp"
-                android:id="@+id/listSettings"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"/>
 
@@ -125,7 +131,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Меню"
+            android:text="Настройки"
             android:textColor="@color/blue"
             android:layout_marginLeft="10dp"
             android:layout_marginBottom="5dp"
@@ -155,6 +161,51 @@
             android:layout_marginRight="10dp"
             android:layout_height="wrap_content"/>
 
+        <CheckBox
+            android:id="@+id/ignore_battery_optimizate"
+            android:layout_width="match_parent"
+            android:layout_marginLeft="10dp"
+            android:buttonTint="@null"
+            android:textColor="@color/white"
+            android:textStyle="bold"
+            android:layout_marginBottom="5dp"
+            android:paddingLeft="10dp"
+            android:textSize="15sp"
+            android:text="Игнорировать оптимизаю"
+            app:buttonTint="@null"
+            android:button="@drawable/custom_checkbox_selector"
+            android:layout_marginRight="10dp"
+            android:layout_height="wrap_content"/>
+
+        <View
+            android:layout_width="match_parent"
+            android:background="@color/white"
+            android:layout_marginBottom="5dp"
+            android:layout_height="2dp"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/rightSideMenu"
+        android:layout_width="280dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:background="#111111"
+        android:orientation="vertical"
+        android:clickable="true"
+        android:focusable="true">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Конфигурация"
+            android:textColor="@color/blue"
+            android:layout_marginLeft="10dp"
+            android:layout_marginBottom="5dp"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginTop="25dp" />
+
         <View
             android:layout_width="match_parent"
             android:background="@color/white"
@@ -162,14 +213,14 @@
             android:layout_height="2dp"/>
 
         <ListView
-            android:id="@+id/saveConfigs"
             android:clipToPadding="false"
-            android:divider="@color/white"
+            android:divider="@null"
             android:scrollbars="vertical"
             android:scrollbarThumbVertical="@drawable/customscrollbars"
             android:listSelector="@android:color/transparent"
-            android:dividerHeight="2dp"
+            android:dividerHeight="0dp"
             android:paddingBottom="50dp"
+            android:id="@+id/listSettings"
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
 
