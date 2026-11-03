@@ -154,6 +154,16 @@ public class VlessParser {
         dnsRule.put("action", "hijack-dns");
         rules.put(dnsRule);
 
+        JSONObject rejectIpv6Rule = new JSONObject();
+        rejectIpv6Rule.put("ip_version", 6);
+        rejectIpv6Rule.put("action", "reject");
+        rules.put(rejectIpv6Rule);
+
+        JSONObject privateRule = new JSONObject();
+        privateRule.put("ip_is_private", true);
+        privateRule.put("outbound", "direct");
+        rules.put(privateRule);
+
         JSONObject serverRule = new JSONObject();
         if (Character.isDigit(serverHost.charAt(0)) || serverHost.contains(":")) {
             JSONArray ipCidr = new JSONArray();
@@ -190,7 +200,7 @@ public class VlessParser {
 
         JSONObject dnsObj = new JSONObject();
         dnsObj.put("servers", dnsServers);
-        dnsObj.put("strategy", "ipv4_only");
+        dnsObj.put("strategy", "prefer_ipv4");
         dnsObj.put("final", "dns-remote");
 
         JSONObject tunInbound = new JSONObject();
@@ -200,7 +210,7 @@ public class VlessParser {
         tunAddresses.put("172.19.0.1/30");
         tunAddresses.put("fdfe:dcba:9876::1/126");
         tunInbound.put("address", tunAddresses);
-        tunInbound.put("mtu", 1280);
+        tunInbound.put("mtu", 1400);
         tunInbound.put("auto_route", true);
         tunInbound.put("stack", "gvisor");
 
@@ -308,5 +318,91 @@ public class VlessParser {
             }
         } catch (Exception ignored) {}
         return "";
+    }
+
+    public static String updateParamInVlessUrl(String vlessUrl, String paramName, String newValue) {
+        if (vlessUrl == null || !vlessUrl.trim().startsWith("vless://")) {
+            return vlessUrl;
+        }
+
+        String key = paramName.toUpperCase().trim();
+        newValue = newValue.trim();
+
+        String mainPart = vlessUrl.trim().substring(8);
+        String hashTag = "";
+        int hashIdx = mainPart.indexOf('#');
+        if (hashIdx != -1) {
+            hashTag = mainPart.substring(hashIdx + 1);
+            mainPart = mainPart.substring(0, hashIdx);
+        }
+
+        int atIdx = mainPart.indexOf('@');
+        if (atIdx == -1) return vlessUrl;
+
+        String uuid = mainPart.substring(0, atIdx);
+        String rest = mainPart.substring(atIdx + 1);
+
+        String hostAndPort;
+        String queryString = "";
+        int queryIdx = rest.indexOf('?');
+        if (queryIdx != -1) {
+            hostAndPort = rest.substring(0, queryIdx);
+            queryString = rest.substring(queryIdx + 1);
+        } else {
+            hostAndPort = rest;
+        }
+
+        String serverHost;
+        String serverPort = "";
+        int colonIdx = hostAndPort.lastIndexOf(':');
+        if (colonIdx != -1) {
+            serverHost = hostAndPort.substring(0, colonIdx);
+            serverPort = hostAndPort.substring(colonIdx + 1);
+        } else {
+            serverHost = hostAndPort;
+        }
+
+        Map<String, String> params = new java.util.LinkedHashMap<>();
+        if (!queryString.isEmpty()) {
+            for (String pair : queryString.split("&")) {
+                int eqIdx = pair.indexOf('=');
+                if (eqIdx != -1) {
+                    params.put(pair.substring(0, eqIdx), pair.substring(eqIdx + 1));
+                }
+            }
+        }
+
+        if ("IP".equals(key) || "HOST".equals(key) || "SERVER".equals(key)) {
+            serverHost = newValue;
+        } else if ("UUID".equals(key)) {
+            uuid = newValue;
+        } else if ("PORT".equals(key)) {
+            serverPort = newValue;
+        } else if ("NAME".equals(key) || "TAG".equals(key)) {
+            hashTag = newValue;
+        } else {
+            params.put(paramName.toLowerCase(), newValue);
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            if (sb.length() > 0) sb.append("&");
+            sb.append(entry.getKey()).append("=").append(entry.getValue());
+        }
+        queryString = sb.toString();
+
+        StringBuilder newUrl = new StringBuilder("vless://");
+        newUrl.append(uuid).append("@").append(serverHost);
+        if (!serverPort.isEmpty()) {
+            newUrl.append(":").append(serverPort);
+        }
+        if (!queryString.isEmpty()) {
+            newUrl.append("?").append(queryString);
+        }
+        if (!hashTag.isEmpty()) {
+            newUrl.append("#").append(hashTag);
+        }
+
+        return newUrl.toString();
     }
 }
