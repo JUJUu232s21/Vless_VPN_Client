@@ -261,8 +261,8 @@ public class MyVpnService extends VpnService implements PlatformInterface, Comma
         builder.setSession("SemyonVPN");
 
         int mtu = options.getMTU();
-        if (mtu <= 0 || mtu > 1280) {
-            mtu = 1280;
+        if (mtu <= 0 || mtu > 1400) {
+            mtu = 1400;
         }
         builder.setMtu(mtu);
 
@@ -296,7 +296,7 @@ public class MyVpnService extends VpnService implements PlatformInterface, Comma
         } catch (Exception e) {
             Log.e(TAG, "Ошибка чтения IPv6 адресов", e);
         }
-
+        
         if (options.getAutoRoute()) {
             if (hasIpv4Address) {
                 builder.addRoute("0.0.0.0", 0);
@@ -390,7 +390,7 @@ public class MyVpnService extends VpnService implements PlatformInterface, Comma
         } catch (Exception e) {
             Log.e(TAG, "Ошибка добавления исключенных приложений", e);
         }
-      
+
         try {
             builder.addDisallowedApplication(getPackageName());
             Log.i(TAG, "  + Excluded self app: " + getPackageName());
@@ -406,6 +406,7 @@ public class MyVpnService extends VpnService implements PlatformInterface, Comma
         }
 
         int fd = tunFd.getFd();
+        Log.i(TAG, "===> TUN интерфейс успешно открыт с fd: " + fd);
         return fd;
     }
 
@@ -422,6 +423,8 @@ public class MyVpnService extends VpnService implements PlatformInterface, Comma
             Log.e(TAG, "CRITICAL: protect() failed, fd=" + fd);
             throw new Exception("VpnService.protect() failed for fd=" + fd);
         }
+
+        Log.d(TAG, "Socket protected successfully, fd=" + fd);
     }
 
     @Override
@@ -498,6 +501,7 @@ public class MyVpnService extends VpnService implements PlatformInterface, Comma
                     try {
                         setUnderlyingNetworks(new Network[]{ activeNetwork });
                         lastUnderlyingNetwork = activeNetwork;
+                        Log.i(TAG, "SUCCESS: setUnderlyingNetworks applied for network: " + activeNetwork);
                     } catch (Exception e) {
                         Log.e(TAG, "CRITICAL: setUnderlyingNetworks failed", e);
                     }
@@ -506,7 +510,8 @@ public class MyVpnService extends VpnService implements PlatformInterface, Comma
                 LinkProperties lp = cm.getLinkProperties(activeNetwork);
                 if (lp != null && lp.getInterfaceName() != null) {
                     String ifName = lp.getInterfaceName();
-                    if (!ifName.startsWith("tun") && !ifName.startsWith("ppp") && !ifName.equals(lastInterfaceName)) {
+                    Log.i(TAG, "Found physical interface name: " + ifName);
+                    if (!ifName.startsWith("tun") && !ifName.equals(lastInterfaceName)) {
                         int ifIndex = 0;
                         try {
                             java.net.NetworkInterface netIf = java.net.NetworkInterface.getByName(ifName);
@@ -521,6 +526,8 @@ public class MyVpnService extends VpnService implements PlatformInterface, Comma
                         Log.i(TAG, "SUCCESS: Notifying sing-box updateDefaultInterface(name=" + ifName + ", index=" + ifIndex + ")");
                         defaultInterfaceListener.updateDefaultInterface(ifName, ifIndex, isExpensive, isConstrained);
                     }
+                } else {
+                    Log.w(TAG, "WARNING: LinkProperties or interfaceName is null for network: " + activeNetwork);
                 }
             } else if (lastUnderlyingNetwork != null) {
                 lastUnderlyingNetwork = null;
@@ -547,8 +554,7 @@ public class MyVpnService extends VpnService implements PlatformInterface, Comma
                     String name = netIf.getName();
                     if (name.startsWith("tun") ||
                             name.startsWith("lo") ||
-                            name.startsWith("dummy") ||
-                            name.startsWith("ppp")) {
+                            name.startsWith("dummy")) {
                         continue;
                     }
 
