@@ -62,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
 
         permissionHelper = new PermissionHelper(this);
 
+
         androidx.drawerlayout.widget.DrawerLayout drawerLayout = findViewById(R.id.drawerLayout);
         if (drawerLayout != null) {
             try {
@@ -76,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
                     edgeSizeField.setInt(dragger, Math.max(edgeSize, newEdgeSize));
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Error", e);
+                Log.e(TAG, "Error setting drawer edge size", e);
             }
         }
 
@@ -97,10 +98,20 @@ public class MainActivity extends AppCompatActivity {
         loadSavedConfigs();
 
         if (addconfigs != null) {
-            addconfigs.setOnClickListener(v -> showAddConfigDialog());
+            addconfigs.setOnClickListener(v -> {
+                if (isVpnRunning()) {
+                    Toast.makeText(this, "Отключите VPN для добавления конфигов!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                showAddConfigDialog();
+            });
         }
 
         saveConfigs.setOnItemClickListener((parent, view, position, id) -> {
+            if (isVpnRunning()) {
+                Toast.makeText(this, "Отключите VPN для смены конфига!", Toast.LENGTH_SHORT).show();
+                return;
+            }
             String selectedConfig = configList.get(position);
             vlessconnect_text.setText(selectedConfig);
             if (drawerLayout != null) {
@@ -109,6 +120,10 @@ public class MainActivity extends AppCompatActivity {
         });
 
         saveConfigs.setOnItemLongClickListener((parent, view, position, id) -> {
+            if (isVpnRunning()) {
+                Toast.makeText(this, "Отключите VPN для удаления конфигов!", Toast.LENGTH_SHORT).show();
+                return true;
+            }
             AlertDialog dialog = new AlertDialog.Builder(MainActivity.this, R.style.CustomAlertDialog)
                     .setTitle("Удалить конфиг")
                     .setPositiveButton("Удалить", (d, which) -> {
@@ -138,8 +153,22 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        updateBatteryOptimizationState();
+
         listSettings.setOnItemLongClickListener((parent, view, position, id) -> {
             String itemText = dataList.get(position);
+            int colonIdx = itemText.indexOf(':');
+            if (colonIdx != -1) {
+                if (isVpnRunning()) {
+                    Toast.makeText(this, "Отключите VPN для редактирования параметров!", Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+                String paramName = itemText.substring(0, colonIdx).trim();
+                String currentValue = itemText.substring(colonIdx + 1).trim();
+                showEditParamDialog(paramName, currentValue);
+                return true;
+            }
+
             ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
             ClipData clip = ClipData.newPlainText("Copied Text", itemText);
             if (clipboard != null) {
@@ -205,6 +234,7 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     checkNotificationPermissionAndStartVpn();
                 } catch (Exception e) {
+                    Log.e(TAG, "Ошибка запуска VPN", e);
                     Toast.makeText(this, "Ошибка запуска VPN: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 }
             }
@@ -229,8 +259,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkNotificationPermissionAndStartVpn() {
+        Log.d(TAG, "checkNotificationPermissionAndStartVpn() вызван");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissionHelper.check(android.Manifest.permission.POST_NOTIFICATIONS, status -> {
+                Log.d(TAG, "POST_NOTIFICATIONS result status=" + status);
                 prepareAndStartVpn();
             });
         } else {
@@ -239,10 +271,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void prepareAndStartVpn() {
+        Log.d(TAG, "prepareAndStartVpn() вызван");
         Intent intent = VpnService.prepare(this);
         if (intent != null) {
+            Log.i(TAG, "Запрос разрешения VpnService.prepare()...");
             vpnPermissionLauncher.launch(intent);
         } else {
+            Log.i(TAG, "VpnService.prepare() вернул null — разрешение уже получено");
             startVpnService();
         }
     }
@@ -252,10 +287,14 @@ public class MainActivity extends AppCompatActivity {
         String configJson;
         try {
             configJson = VlessParser.parseToSingBoxConfig(vlessUrl);
+            Log.i(TAG, "Сгенерирован sing-box JSON для VLESS:\n" + configJson);
         } catch (Exception e) {
+            Log.e(TAG, "Ошибка парсинга VLESS ссылки", e);
             Toast.makeText(this, "Ошибка VLESS ссылки: " + e.getMessage(), Toast.LENGTH_LONG).show();
             return;
         }
+
+        Log.i(TAG, "Запуск службы MyVpnService с VLESS...");
         Intent intent = new Intent(this, MyVpnService.class);
         intent.putExtra("config_json", configJson);
         ContextCompat.startForegroundService(this, intent);
@@ -266,6 +305,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void stopVpnService() {
+        Log.i(TAG, "Остановка службы MyVpnService...");
         Intent intent = new Intent(this, MyVpnService.class);
         intent.setAction("STOP");
         startService(intent);
@@ -281,6 +321,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         updateSystemBar();
         updateVpnButtonState();
+        updateBatteryOptimizationState();
     }
 
     private void updateVpnButtonState() {
@@ -328,7 +369,73 @@ public class MainActivity extends AppCompatActivity {
                 .create();
 
         dialog.setOnShowListener(dialogInterface -> {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                    .setTextColor(ContextCompat.getColor(this, R.color.blue));
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+                    .setTextColor(ContextCompat.getColor(this, R.color.blue));
+        });
+
+        dialog.show();
+    }
+
+    private void showEditParamDialog(String paramName, String currentValue) {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_input, null);
+        EditText etInput = dialogView.findViewById(R.id.etInput);
+        if (etInput != null) {
+            etInput.setHint(paramName);
+            etInput.setText(currentValue);
+            etInput.setSelection(currentValue.length());
+        }
+
+        AlertDialog dialog = new AlertDialog.Builder(MainActivity.this, R.style.CustomAlertDialog)
+                .setTitle("Изменить " + paramName)
+                .setView(dialogView)
+                .setCancelable(false)
+                .setPositiveButton("Сохранить", (d, which) -> {
+                    if (etInput == null) return;
+                    String newValue = etInput.getText().toString().trim();
+                    if (newValue.isEmpty()) {
+                        Toast.makeText(this, "Значение не может быть пустым", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    String currentVless = vlessconnect_text.getText().toString().trim();
+                    if (!currentVless.startsWith("vless://")) {
+                        return;
+                    }
+
+                    String updatedVless = VlessParser.updateParamInVlessUrl(currentVless, paramName, newValue);
+
+                    int indexInList = configList.indexOf(currentVless);
+                    if (indexInList != -1) {
+                        configList.set(indexInList, updatedVless);
+                    } else {
+                        configList.add(0, updatedVless);
+                    }
+
+                    saveConfigsToPrefs();
+                    if (configAdapter != null) {
+                        configAdapter.notifyDataSetChanged();
+                    }
+
+                    vlessconnect_text.setText(updatedVless);
+                    updateVlessDetails(updatedVless);
+                    Toast.makeText(this, paramName + " изменен", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Копировать", (d, which) -> {
+                    ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                    ClipData clip = ClipData.newPlainText("Copied " + paramName, currentValue);
+                    if (clipboard != null) {
+                        clipboard.setPrimaryClip(clip);
+                        Toast.makeText(MainActivity.this, "Текст скопирован!", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNeutralButton("Отмена", null)
+                .create();
+
+        dialog.setOnShowListener(dialogInterface -> {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(this, R.color.blue));
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(ContextCompat.getColor(this, R.color.blue));
             dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(ContextCompat.getColor(this, R.color.blue));
         });
 
@@ -358,6 +465,47 @@ public class MainActivity extends AppCompatActivity {
         prefs.edit().putString("saved_configs_json", jsonArray.toString()).apply();
     }
 
+    private void updateBatteryOptimizationState() {
+        CheckBox batteryCheck = findViewById(R.id.ignore_battery_optimizate);
+        if (batteryCheck != null) {
+            boolean isIgnoring = false;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                android.os.PowerManager pm = (android.os.PowerManager) getSystemService(POWER_SERVICE);
+                if (pm != null) {
+                    isIgnoring = pm.isIgnoringBatteryOptimizations(getPackageName());
+                }
+            }
+
+            batteryCheck.setOnCheckedChangeListener(null);
+            batteryCheck.setChecked(isIgnoring);
+
+            batteryCheck.setOnClickListener(v -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    android.os.PowerManager pm = (android.os.PowerManager) getSystemService(POWER_SERVICE);
+                    boolean currentlyIgnoring = pm != null && pm.isIgnoringBatteryOptimizations(getPackageName());
+                    if (!currentlyIgnoring) {
+                        try {
+                            Intent intent = new Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                            intent.setData(android.net.Uri.parse("package:" + getPackageName()));
+                            startActivity(intent);
+                        } catch (Exception e) {
+                            try {
+                                Intent intent = new Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                                startActivity(intent);
+                            } catch (Exception ignored) {}
+                        }
+                    } else {
+                        try {
+                            Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                            intent.setData(android.net.Uri.parse("package:" + getPackageName()));
+                            startActivity(intent);
+                        } catch (Exception ignored) {}
+                    }
+                }
+            });
+        }
+    }
+
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
@@ -370,6 +518,12 @@ public class MainActivity extends AppCompatActivity {
             android.view.ViewGroup.LayoutParams params = sideMenu.getLayoutParams();
             params.width = (int) (getResources().getDisplayMetrics().widthPixels * 0.75);
             sideMenu.setLayoutParams(params);
+        }
+        View rightSideMenu = findViewById(R.id.rightSideMenu);
+        if (rightSideMenu != null) {
+            android.view.ViewGroup.LayoutParams params = rightSideMenu.getLayoutParams();
+            params.width = (int) (getResources().getDisplayMetrics().widthPixels * 0.75);
+            rightSideMenu.setLayoutParams(params);
         }
         getWindow().setNavigationBarColor(Color.TRANSPARENT);
         getWindow().setStatusBarColor(Color.TRANSPARENT);
