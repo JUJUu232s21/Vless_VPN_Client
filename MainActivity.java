@@ -77,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
                     edgeSizeField.setInt(dragger, Math.max(edgeSize, newEdgeSize));
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Error setting drawer edge size", e);
+                Log.e(TAG, "Error", e);
             }
         }
 
@@ -234,7 +234,6 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     checkNotificationPermissionAndStartVpn();
                 } catch (Exception e) {
-                    Log.e(TAG, "Ошибка запуска VPN", e);
                     Toast.makeText(this, "Ошибка запуска VPN: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 }
             }
@@ -259,10 +258,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkNotificationPermissionAndStartVpn() {
-        Log.d(TAG, "checkNotificationPermissionAndStartVpn() вызван");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissionHelper.check(android.Manifest.permission.POST_NOTIFICATIONS, status -> {
-                Log.d(TAG, "POST_NOTIFICATIONS result status=" + status);
                 prepareAndStartVpn();
             });
         } else {
@@ -271,13 +268,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void prepareAndStartVpn() {
-        Log.d(TAG, "prepareAndStartVpn() вызван");
         Intent intent = VpnService.prepare(this);
         if (intent != null) {
-            Log.i(TAG, "Запрос разрешения VpnService.prepare()...");
             vpnPermissionLauncher.launch(intent);
         } else {
-            Log.i(TAG, "VpnService.prepare() вернул null — разрешение уже получено");
             startVpnService();
         }
     }
@@ -287,14 +281,10 @@ public class MainActivity extends AppCompatActivity {
         String configJson;
         try {
             configJson = VlessParser.parseToSingBoxConfig(vlessUrl);
-            Log.i(TAG, "Сгенерирован sing-box JSON для VLESS:\n" + configJson);
-        } catch (Exception e) {
-            Log.e(TAG, "Ошибка парсинга VLESS ссылки", e);
+        } catch (Exception e) {;
             Toast.makeText(this, "Ошибка VLESS ссылки: " + e.getMessage(), Toast.LENGTH_LONG).show();
             return;
         }
-
-        Log.i(TAG, "Запуск службы MyVpnService с VLESS...");
         Intent intent = new Intent(this, MyVpnService.class);
         intent.putExtra("config_json", configJson);
         ContextCompat.startForegroundService(this, intent);
@@ -305,7 +295,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void stopVpnService() {
-        Log.i(TAG, "Остановка службы MyVpnService...");
         Intent intent = new Intent(this, MyVpnService.class);
         intent.setAction("STOP");
         startService(intent);
@@ -369,10 +358,8 @@ public class MainActivity extends AppCompatActivity {
                 .create();
 
         dialog.setOnShowListener(dialogInterface -> {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                    .setTextColor(ContextCompat.getColor(this, R.color.blue));
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-                    .setTextColor(ContextCompat.getColor(this, R.color.blue));
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(this, R.color.blue));
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(ContextCompat.getColor(this, R.color.blue));
         });
 
         dialog.show();
