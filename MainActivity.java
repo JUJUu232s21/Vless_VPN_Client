@@ -365,6 +365,77 @@ public class MainActivity extends AppCompatActivity {
         dialog.show();
     }
 
+    private void checkServerPing() {
+        String currentVless = vlessconnect_text.getText().toString().trim();
+        if (currentVless.isEmpty() || !currentVless.startsWith("vless://")) {
+            Toast.makeText(this, "Добавьте ссылку vless://", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String serverHost = "";
+        int serverPort = 443;
+        try {
+            String mainPart = currentVless.substring(8);
+            int hashIdx = mainPart.indexOf('#');
+            if (hashIdx != -1) mainPart = mainPart.substring(0, hashIdx);
+            int atIdx = mainPart.indexOf('@');
+            if (atIdx != -1) {
+                String rest = mainPart.substring(atIdx + 1);
+                int queryIdx = rest.indexOf('?');
+                String hostAndPort = (queryIdx != -1) ? rest.substring(0, queryIdx) : rest;
+                int colonIdx = hostAndPort.lastIndexOf(':');
+                if (colonIdx != -1) {
+                    serverHost = hostAndPort.substring(0, colonIdx);
+                    serverPort = Integer.parseInt(hostAndPort.substring(colonIdx + 1));
+                } else {
+                    serverHost = hostAndPort;
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error parsing server for ping", e);
+        }
+
+        if (serverHost.isEmpty()) {
+            Toast.makeText(this, "Не удалось определить адрес сервера", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        final String finalHost = serverHost;
+        final int finalPort = serverPort;
+
+        new Thread(() -> {
+            long startTime = System.currentTimeMillis();
+            long pingTime = -1;
+            boolean success = false;
+            try (java.net.Socket socket = new java.net.Socket()) {
+                socket.connect(new java.net.InetSocketAddress(finalHost, finalPort), 5000);
+                pingTime = System.currentTimeMillis() - startTime;
+                success = true;
+            } catch (Exception e) {
+                success = false;
+            }
+
+            long finalPing = pingTime;
+            boolean finalSuccess = success;
+
+            runOnUiThread(() -> {
+                String message = finalSuccess ? (finalPing + " мс") : "Сервер недоступен (тайм-аут)";
+                AlertDialog dialog = new AlertDialog.Builder(MainActivity.this, R.style.CustomAlertDialog)
+                        .setTitle("Пинг: " + finalHost)
+                        .setMessage(message)
+                        .setPositiveButton("Закрыть", null)
+                        .setNegativeButton("Повторить", (d, which) -> checkServerPing())
+                        .create();
+                dialog.setOnShowListener(dialogInterface -> {
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(MainActivity.this, R.color.blue));
+                    dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(ContextCompat.getColor(MainActivity.this, R.color.blue));
+                });
+
+                dialog.show();
+            });
+        }).start();
+    }
+
     private void showEditParamDialog(String paramName, String currentValue) {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_input, null);
         EditText etInput = dialogView.findViewById(R.id.etInput);
